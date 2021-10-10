@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
-//import './library.dart';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:outline_gradient_button/outline_gradient_button.dart';
+import 'package:firebase_core/firebase_core.dart';
+import './library.dart';
 
-void main() {
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp();
   runApp(MyApp());
 }
 
@@ -13,6 +18,10 @@ final myDataProvider = ChangeNotifierProvider<DataChangeNotifier>((ref) {
 
 class DataChangeNotifier extends ChangeNotifier {
   String myUsername = '';
+  String roomCode = '';
+  bool newRoom = false;
+  //final db = FirebaseFirestore.instance;
+
 
   //Future<bool> updateUsername(String value) async {
   // Future<bool> res = database.collections.addname();
@@ -20,7 +29,6 @@ class DataChangeNotifier extends ChangeNotifier {
   //}
 }
 
-class Data extends ChangeNotifier {}
 
 class MyApp extends StatelessWidget {
   // This widget is the root of your application.
@@ -43,6 +51,28 @@ class MyApp extends StatelessWidget {
           primarySwatch: Colors.amber,
         ),
         home: RoomFinder(),
+      ),
+    );
+  }
+}
+
+class GamePage extends ConsumerWidget {
+  Widget build(BuildContext context, ScopedReader watch) {
+    final data = watch(myDataProvider);
+    return Scaffold(
+     body: SafeArea(
+        child: Center(
+            child: Container(
+                constraints: BoxConstraints.expand(),
+                decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                  colors: [Colors.white, Colors.black],
+                  begin: Alignment.bottomLeft,
+                  end: Alignment.topRight,
+                )),
+                child: Center(
+                  child: Text("Welcome, "+data.myUsername),
+                ))),
       ),
     );
   }
@@ -111,10 +141,16 @@ class RoomFinderContent extends ConsumerWidget {
                 onTap: () {
                   // Validate returns true if the form is valid, or false otherwise.
                   if (_formKey.currentState!.validate()) {
+                    data.newRoom = true;
                     // If the form is valid, display a snackbar. In the real world,
                     // you'd often call a server or save the information in a database.
                     ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(content: Text('Processing Data')));
+                    Navigator.push(
+                      context, 
+                      MaterialPageRoute(builder: (context) => GamePage()),
+
+                    );
                   }
                 },
                 child: Text("Create Room",
@@ -140,6 +176,7 @@ class RoomFinderContent extends ConsumerWidget {
                     if (value == null || value.isEmpty) {
                       return 'Please enter some text';
                     }
+                    data.roomCode = value;
                     print(value);
                     return null;
                   },
@@ -148,7 +185,12 @@ class RoomFinderContent extends ConsumerWidget {
               Container(height: 20),
               OutlineGradientButton(
                 onTap: () {
-                  print('join room');
+                  if (_formKey.currentState!.validate()) {
+                    Navigator.push(
+                      context, 
+                      MaterialPageRoute(builder: (context) => GamePage()),
+                    );
+                  }
                 },
                 child: Text("Join Room",
                     style: TextStyle(color: Colors.black, fontSize: 20)),
