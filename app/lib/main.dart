@@ -3,8 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:outline_gradient_button/outline_gradient_button.dart';
 import 'package:firebase_core/firebase_core.dart';
-import './library.dart';
-
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -18,10 +17,26 @@ final myDataProvider = ChangeNotifierProvider<DataChangeNotifier>((ref) {
 
 class DataChangeNotifier extends ChangeNotifier {
   String myUsername = '';
+  bool isAdmin = false;
   String roomCode = '';
   bool newRoom = false;
-  //final db = FirebaseFirestore.instance;
+  final db = FirebaseFirestore.instance;
+  List<bool> settings = [true, false, false];
 
+  void updateSettings(int index, bool b) {
+    settings[index] = b;
+    notifyListeners();
+  }
+
+  void test() {
+    db.collection('rooms').doc('hello').set(
+      {
+        'name': 'bossman'
+      }).then((_){
+        print('ye boi');
+      });
+    
+  }
 
   //Future<bool> updateUsername(String value) async {
   // Future<bool> res = database.collections.addname();
@@ -29,26 +44,32 @@ class DataChangeNotifier extends ChangeNotifier {
   //}
 }
 
-
 class MyApp extends StatelessWidget {
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return ProviderScope(
       child: MaterialApp(
-        title: 'Flutter Demo',
+        title: 'Mafia',
         debugShowCheckedModeBanner: false,
         theme: ThemeData(
-          // This is the theme of your application.
-          //
-          // Try running your application with "flutter run". You'll see the
-          // application has a blue toolbar. Then, without quitting the app, try
-          // changing the primarySwatch below to Colors.green and then invoke
-          // "hot reload" (press "r" in the console where you ran "flutter run",
-          // or simply save your changes to "hot reload" in a Flutter IDE).
-          // Notice that the counter didn't reset back to zero; the application
-          // is not restarted.
+          colorScheme: ColorScheme(background: Colors.purple,
+          primary: Colors.amber,
+          primaryVariant: Colors.amber,
+          onBackground: Colors.grey,
+          onError: Colors.white,
+          onPrimary: Colors.grey,
+          onSecondary: Colors.grey,
+          onSurface: Colors.white,
+          secondary: Colors.amber,
+          secondaryVariant: Colors.amber,
+          surface: Colors.blueGrey,
+          brightness: Brightness.light,
+          error: Colors.red,
+          ),
           primarySwatch: Colors.amber,
+          textTheme: TextTheme(bodyText1: TextStyle(color: Colors.grey), bodyText2: TextStyle(color: Colors.grey))
+              .apply(bodyColor: Colors.grey, displayColor: Colors.grey),
         ),
         home: RoomFinder(),
       ),
@@ -56,24 +77,40 @@ class MyApp extends StatelessWidget {
   }
 }
 
-class GamePage extends ConsumerWidget {
+class SettingsPage extends ConsumerWidget {
   Widget build(BuildContext context, ScopedReader watch) {
     final data = watch(myDataProvider);
     return Scaffold(
-     body: SafeArea(
+      body: SafeArea(
         child: Center(
             child: Container(
-                constraints: BoxConstraints.expand(),
-                decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                  colors: [Colors.white, Colors.black],
-                  begin: Alignment.bottomLeft,
-                  end: Alignment.topRight,
-                )),
-                child: Center(
-                  child: Text("Welcome, "+data.myUsername),
-                ))),
+          constraints: BoxConstraints.expand(),
+          decoration: BoxDecoration(
+              gradient: LinearGradient(
+            colors: [Colors.white, Colors.black],
+            begin: Alignment.bottomLeft,
+            end: Alignment.topRight,
+          )),
+          child: SettingsPageContent(),
+        )),
       ),
+      bottomNavigationBar: BottomAppBar(
+        color: Colors.blueGrey,
+        child: Padding(
+            padding: EdgeInsets.all(10),
+            child: Row(
+              children: [
+                IconButton(
+                    icon: Icon(Icons.arrow_back_ios),
+                    onPressed: () {
+                      Navigator.pop(context);
+                    }),
+                Spacer()
+              ],
+            )),
+      ),
+      floatingActionButton:
+          FloatingActionButton(onPressed: () {data.test();}, child: Icon(Icons.play_arrow)),
     );
   }
 }
@@ -147,9 +184,8 @@ class RoomFinderContent extends ConsumerWidget {
                     ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(content: Text('Processing Data')));
                     Navigator.push(
-                      context, 
-                      MaterialPageRoute(builder: (context) => GamePage()),
-
+                      context,
+                      MaterialPageRoute(builder: (context) => SettingsPage()),
                     );
                   }
                 },
@@ -187,8 +223,8 @@ class RoomFinderContent extends ConsumerWidget {
                 onTap: () {
                   if (_formKey.currentState!.validate()) {
                     Navigator.push(
-                      context, 
-                      MaterialPageRoute(builder: (context) => GamePage()),
+                      context,
+                      MaterialPageRoute(builder: (context) => SettingsPage()),
                     );
                   }
                 },
@@ -206,5 +242,103 @@ class RoomFinderContent extends ConsumerWidget {
         ),
       ),
     );
+  }
+}
+
+class SettingsPageContent extends ConsumerWidget {
+  build(BuildContext context, ScopedReader watch) {
+    final data = watch(myDataProvider);
+
+    return ListView(padding: EdgeInsets.all(20), children: [
+      Title("S E T T I N G S"),
+      Padding(
+        padding: EdgeInsets.fromLTRB(10, 30, 10, 10),
+        child: Row(
+          children: [
+            Spacer(),
+            Container(child: Text('Setting 1')),
+            Checkbox(
+                value: data.settings[0],
+                onChanged: (value) {
+                  data.updateSettings(0, value ?? false);
+                }),
+            Gap(),
+            Container(child: Text('Setting 2')),
+            Checkbox(
+                value: data.settings[1],
+                onChanged: (value) {
+                  data.updateSettings(1, value ?? false);
+                }),
+            Gap(),
+            Container(child: Text('Setting 3')),
+            Checkbox(
+                value: data.settings[2],
+                onChanged: (value) {
+                  data.updateSettings(2, value ?? false);
+                }),
+            Spacer()
+          ],
+        ),
+      ),
+      Container(height: 40),
+      Title("C A R D S"),
+      Row(
+        children: [
+          Spacer(),
+          PCard(),
+          Gap(),
+          PCard(),
+          Gap(),
+          PCard(),
+          Gap(),
+          PCard(),
+          Spacer()
+        ],
+      ),
+    ]);
+  }
+}
+
+class Title extends StatelessWidget {
+  Title(
+    this.text,
+  );
+
+  final String text;
+
+  @override
+  build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(10.0),
+      child: Container(
+        height: 50,
+        child: Center(
+          child: FittedBox(
+            fit: BoxFit.fitHeight,
+            child: Text(text,
+                style: TextStyle(color: Colors.grey, fontSize: 400.0)),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class PCard extends StatelessWidget {
+  @override
+  build(BuildContext context) {
+    final s = MediaQuery.of(context).size;
+    final w = s.width / 8;
+    return Card(
+        child: Container(height: 1.6 * w, width: w, child: Text("Card 1")));
+  }
+}
+
+class Gap extends StatelessWidget {
+  @override
+  build(BuildContext context) {
+    final s = MediaQuery.of(context).size;
+    final w = s.width / 30;
+    return Container(width: w);
   }
 }
