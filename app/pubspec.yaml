@@ -31,6 +31,7 @@ dependencies:
     outline_gradient_button: ^2.0.0+1
     firebase_core: ^1.7.0
     cloud_firestore: ^2.5.3
+    playing_cards: ^0.2.0+7
     
     
 

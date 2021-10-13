@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:outline_gradient_button/outline_gradient_button.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:playing_cards/playing_cards.dart';
+import 'dart:math';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -15,33 +17,82 @@ final myDataProvider = ChangeNotifierProvider<DataChangeNotifier>((ref) {
   return DataChangeNotifier();
 });
 
+class Roles {}
+
 class DataChangeNotifier extends ChangeNotifier {
+  bool newRoom = false;
   String myUsername = '';
   bool isAdmin = false;
   String roomCode = '';
-  bool newRoom = false;
+  DateTime date = DateTime.now();
+
   final db = FirebaseFirestore.instance;
   List<bool> settings = [true, false, false];
+  List<Roles> roles = [];
+  List<int> votes = [];
+
+  final _chars =
+      'AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz1234567890';
+  Random _rnd = Random();
+
+  String getRandomString(int length) => String.fromCharCodes(Iterable.generate(
+      length, (_) => _chars.codeUnitAt(_rnd.nextInt(_chars.length))));
+
+  void findRoom(context) {
+    isAdmin = false;
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text('finding Room: ' + roomCode)));
+  }
+
+  void generateRoom(context) {
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text('Processing')));
+    roomCode = getRandomString(5);
+    db.collection('rooms').doc(roomCode).get().then((docSnapshot) {
+      if (docSnapshot.exists) {
+        //clean
+        //setup
+      } else {
+        db.collection('rooms').doc(roomCode).set({
+          'users': [
+            {
+              'name': myUsername,
+              'role': 'Villager',
+              'card': [0, 0]
+            }
+          ],
+          'settings': settings,
+          'votes': [],
+          'expiry': Timestamp.fromDate(date.add(Duration(days: 1)))
+        });
+        isAdmin = true;
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Success')));
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => SettingsPage()),
+        );
+      }
+    });
+  }
 
   void updateSettings(int index, bool b) {
     settings[index] = b;
+    db
+        .collection('rooms')
+        .doc(roomCode)
+        .update({'settings': settings}).then((_) {
+      print('settings update');
+      print(settings);
+    });
     notifyListeners();
   }
 
   void test() {
-    db.collection('rooms').doc('hello').set(
-      {
-        'name': 'bossman'
-      }).then((_){
-        print('ye boi');
-      });
-    
+    db.collection('rooms').doc('hello').set({'name': 'bossman'}).then((_) {
+      print('ye boi');
+    });
   }
-
-  //Future<bool> updateUsername(String value) async {
-  // Future<bool> res = database.collections.addname();
-  //return res;
-  //}
 }
 
 class MyApp extends StatelessWidget {
@@ -53,22 +104,25 @@ class MyApp extends StatelessWidget {
         title: 'Mafia',
         debugShowCheckedModeBanner: false,
         theme: ThemeData(
-          colorScheme: ColorScheme(background: Colors.purple,
-          primary: Colors.amber,
-          primaryVariant: Colors.amber,
-          onBackground: Colors.grey,
-          onError: Colors.white,
-          onPrimary: Colors.grey,
-          onSecondary: Colors.grey,
-          onSurface: Colors.white,
-          secondary: Colors.amber,
-          secondaryVariant: Colors.amber,
-          surface: Colors.blueGrey,
-          brightness: Brightness.light,
-          error: Colors.red,
+          colorScheme: ColorScheme(
+            background: Colors.purple,
+            primary: Colors.amber,
+            primaryVariant: Colors.amber,
+            onBackground: Colors.grey,
+            onError: Colors.white,
+            onPrimary: Colors.grey,
+            onSecondary: Colors.grey,
+            onSurface: Colors.amber,
+            secondary: Colors.amber,
+            secondaryVariant: Colors.amber,
+            surface: Colors.blueGrey,
+            brightness: Brightness.light,
+            error: Colors.red,
           ),
           primarySwatch: Colors.amber,
-          textTheme: TextTheme(bodyText1: TextStyle(color: Colors.grey), bodyText2: TextStyle(color: Colors.grey))
+          textTheme: TextTheme(
+                  bodyText1: TextStyle(color: Colors.grey),
+                  bodyText2: TextStyle(color: Colors.grey))
               .apply(bodyColor: Colors.grey, displayColor: Colors.grey),
         ),
         home: RoomFinder(),
@@ -109,8 +163,11 @@ class SettingsPage extends ConsumerWidget {
               ],
             )),
       ),
-      floatingActionButton:
-          FloatingActionButton(onPressed: () {data.test();}, child: Icon(Icons.play_arrow)),
+      floatingActionButton: FloatingActionButton(
+          onPressed: () {
+            data.test();
+          },
+          child: Icon(Icons.play_arrow)),
     );
   }
 }
@@ -119,19 +176,17 @@ class RoomFinder extends ConsumerWidget {
   Widget build(BuildContext context, ScopedReader myDataProvider) {
     return Scaffold(
       body: SafeArea(
-        child: Center(
-            child: Container(
-                constraints: BoxConstraints.expand(),
-                decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                  colors: [Colors.white, Colors.black],
-                  begin: Alignment.bottomLeft,
-                  end: Alignment.topRight,
-                )),
-                child: Center(
-                  child: RoomFinderContent(),
-                ))),
-      ),
+          child: Center(
+              child: Container(
+        constraints: BoxConstraints.expand(),
+        decoration: BoxDecoration(
+            gradient: LinearGradient(
+          colors: [Colors.white, Colors.black],
+          begin: Alignment.bottomLeft,
+          end: Alignment.topRight,
+        )),
+        child: Center(child: RoomFinderContent()),
+      ))),
     );
   }
 }
@@ -167,7 +222,7 @@ class RoomFinderContent extends ConsumerWidget {
                       return 'Please enter some text';
                     }
                     data.myUsername = value;
-                    //data.updateUsername(value);
+
                     print(value);
                     return null;
                   },
@@ -177,17 +232,11 @@ class RoomFinderContent extends ConsumerWidget {
               OutlineGradientButton(
                 onTap: () {
                   // Validate returns true if the form is valid, or false otherwise.
+                  data.newRoom = true;
                   if (_formKey.currentState!.validate()) {
-                    data.newRoom = true;
-                    // If the form is valid, display a snackbar. In the real world,
-                    // you'd often call a server or save the information in a database.
-                    ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Processing Data')));
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => SettingsPage()),
-                    );
+                    data.generateRoom(context);
                   }
+                  data.newRoom = false;
                 },
                 child: Text("Create Room",
                     style: TextStyle(color: Colors.black, fontSize: 20)),
@@ -210,10 +259,13 @@ class RoomFinderContent extends ConsumerWidget {
                   // The validator receives the text that the user has entered.
                   validator: (value) {
                     if (value == null || value.isEmpty) {
+                      if (data.newRoom) {
+                        return null;
+                      }
                       return 'Please enter some text';
                     }
                     data.roomCode = value;
-                    print(value);
+
                     return null;
                   },
                 ),
@@ -221,11 +273,9 @@ class RoomFinderContent extends ConsumerWidget {
               Container(height: 20),
               OutlineGradientButton(
                 onTap: () {
+                  data.newRoom = false;
                   if (_formKey.currentState!.validate()) {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => SettingsPage()),
-                    );
+                    data.findRoom(context);
                   }
                 },
                 child: Text("Join Room",
@@ -281,20 +331,21 @@ class SettingsPageContent extends ConsumerWidget {
         ),
       ),
       Container(height: 40),
-      Title("C A R D S"),
+      Title("C A R D S   I N   P L A Y"),
       Row(
         children: [
           Spacer(),
-          PCard(),
+          PCard('JOKER'),
           Gap(),
-          PCard(),
+          PCard('DOCTOR'),
           Gap(),
-          PCard(),
+          PCard('DETECTIVE'),
           Gap(),
-          PCard(),
+          PCard('GUNSLINGER'),
           Spacer()
         ],
       ),
+      Title("E X T R A   C A R D S"),
     ]);
   }
 }
@@ -325,12 +376,22 @@ class Title extends StatelessWidget {
 }
 
 class PCard extends StatelessWidget {
+  PCard(this.name);
+
+  final String name;
+
   @override
   build(BuildContext context) {
     final s = MediaQuery.of(context).size;
     final w = s.width / 8;
     return Card(
-        child: Container(height: 1.6 * w, width: w, child: Text("Card 1")));
+      child: Container(
+        height: 1.6 * w,
+        child: PlayingCardView(
+          card: PlayingCard(Suit.clubs, CardValue.ace),
+        ),
+      ),
+    );
   }
 }
 
