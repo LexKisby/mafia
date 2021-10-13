@@ -6,6 +6,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:playing_cards/playing_cards.dart';
 import 'dart:math';
+import 'dart:core';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -88,6 +89,13 @@ class DataChangeNotifier extends ChangeNotifier {
     notifyListeners();
   }
 
+  void startGame(context) {
+    Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => GamePage()),
+            );
+  }
+
   void test() {
     db.collection('rooms').doc('hello').set({'name': 'bossman'}).then((_) {
       print('ye boi');
@@ -151,7 +159,7 @@ class SettingsPage extends ConsumerWidget {
       bottomNavigationBar: BottomAppBar(
         color: Colors.blueGrey,
         child: Padding(
-            padding: EdgeInsets.all(10),
+            padding: EdgeInsets.all(5),
             child: Row(
               children: [
                 IconButton(
@@ -159,13 +167,16 @@ class SettingsPage extends ConsumerWidget {
                     onPressed: () {
                       Navigator.pop(context);
                     }),
+                Gap(),
+                Title("ROOM: " + data.roomCode),
                 Spacer()
               ],
             )),
       ),
       floatingActionButton: FloatingActionButton(
           onPressed: () {
-            data.test();
+            data.startGame(context);
+            
           },
           child: Icon(Icons.play_arrow)),
     );
@@ -350,6 +361,83 @@ class SettingsPageContent extends ConsumerWidget {
   }
 }
 
+class GamePage extends StatelessWidget {
+  @override
+  build(BuildContext context) {
+    return Scaffold(
+        body: SafeArea(
+            child: Center(
+                child: Container(
+                    constraints: BoxConstraints.expand(),
+                    decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                      colors: [Colors.white, Colors.black],
+                      begin: Alignment.bottomLeft,
+                      end: Alignment.topRight,
+                    )),
+                    child: GamePageContent()))),
+        appBar: GameBarContent());
+  }
+}
+
+class GameBarContent extends ConsumerWidget with PreferredSizeWidget {
+  @override
+  build(BuildContext context, ScopedReader watch) {
+    final data = watch(myDataProvider);
+
+    return AppBar(title: Title('D A Y'), actions: [
+      Card(
+          child:
+              Container(width: 150, child: Center(child: Text(data.roomCode)))),
+      Gap(),
+      Card(
+          child: Container(
+              width: 150, child: Center(child: Text('Votes in 00:00')))),
+      Gap(),
+    ]);
+  }
+
+  @override
+  Size get preferredSize => Size.fromHeight(kToolbarHeight);
+}
+
+class GamePageContent extends ConsumerWidget {
+  @override
+  build(BuildContext context, ScopedReader watch) {
+    final data = watch(myDataProvider);
+
+    return Column(
+      children: [
+        Row(children: [Title(data.myUsername), Spacer()]),
+        GameCharacters(),
+        Gap(),
+        GameChat(),
+      ],
+    );
+  }
+}
+
+class GameCharacters extends ConsumerWidget {
+  @override
+  build(BuildContext context, ScopedReader watch) {
+    final data = watch(myDataProvider);
+    return Card(
+        child: Container(height: 20, width: 20),
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.0)));
+  }
+}
+
+class GameChat extends ConsumerWidget {
+  @override
+  build(BuildContext context, ScopedReader watch) {
+    final size = MediaQuery.of(context).size;
+    final data = watch(myDataProvider);
+    return Container(
+        width: size.width * 0.7, height: 300, color: Colors.deepPurple);
+  }
+}
+
 class Title extends StatelessWidget {
   Title(
     this.text,
@@ -359,10 +447,11 @@ class Title extends StatelessWidget {
 
   @override
   build(BuildContext context) {
+    final w = MediaQuery.of(context).size.width;
     return Padding(
       padding: const EdgeInsets.all(10.0),
       child: Container(
-        height: 50,
+        height: min(w/10, 90),
         child: Center(
           child: FittedBox(
             fit: BoxFit.fitHeight,
@@ -386,7 +475,7 @@ class PCard extends StatelessWidget {
     final w = s.width / 8;
     return Card(
       child: Container(
-        height: 1.6 * w,
+        height: min(1.6 * w, 300),
         child: PlayingCardView(
           card: PlayingCard(Suit.clubs, CardValue.ace),
         ),
@@ -400,6 +489,6 @@ class Gap extends StatelessWidget {
   build(BuildContext context) {
     final s = MediaQuery.of(context).size;
     final w = s.width / 30;
-    return Container(width: w);
+    return Container(width: w, height: w);
   }
 }
