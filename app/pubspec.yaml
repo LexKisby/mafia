@@ -32,6 +32,10 @@ dependencies:
     firebase_core: ^1.7.0
     cloud_firestore: ^2.5.3
     playing_cards: ^0.2.0+7
+    modal_bottom_sheet: ^2.0.0
+    avatars: ^2.2.0
+    multiavatar: ^0.1.5
+    flutter_svg: ^0.23.0+1
     
     
 

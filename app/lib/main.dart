@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-
+import 'package:multiavatar/multiavatar.dart';
+import 'package:avatars/avatars.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:outline_gradient_button/outline_gradient_button.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -31,6 +33,12 @@ class DataChangeNotifier extends ChangeNotifier {
   List<bool> settings = [true, false, false];
   List<Roles> roles = [];
   List<int> votes = [];
+  var users = <String, List>{
+    'me': ['me', 'joker', 1, 'you']
+  };
+  String rawSvg = multiavatar('cry');
+  List<DrawableRoot> roots = [];
+  
 
   final _chars =
       'AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz1234567890';
@@ -46,6 +54,7 @@ class DataChangeNotifier extends ChangeNotifier {
   }
 
   void generateRoom(context) {
+    test();
     ScaffoldMessenger.of(context)
         .showSnackBar(SnackBar(content: Text('Processing')));
     roomCode = getRandomString(5);
@@ -91,15 +100,17 @@ class DataChangeNotifier extends ChangeNotifier {
 
   void startGame(context) {
     Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => GamePage()),
-            );
+      context,
+      MaterialPageRoute(builder: (context) => GamePage()),
+    );
   }
 
-  void test() {
-    db.collection('rooms').doc('hello').set({'name': 'bossman'}).then((_) {
-      print('ye boi');
-    });
+  void test() async {
+    roots = [];
+    rawSvg = multiavatar(myUsername);
+    var root = await svg.fromSvgString(rawSvg, rawSvg);
+    roots.add(root);
+    notifyListeners();
   }
 }
 
@@ -169,6 +180,8 @@ class SettingsPage extends ConsumerWidget {
                     }),
                 Gap(),
                 Title("ROOM: " + data.roomCode),
+                Gap(),
+                Avatar(),
                 Spacer()
               ],
             )),
@@ -176,10 +189,50 @@ class SettingsPage extends ConsumerWidget {
       floatingActionButton: FloatingActionButton(
           onPressed: () {
             data.startGame(context);
-            
           },
           child: Icon(Icons.play_arrow)),
     );
+  }
+}
+
+class Avatar extends ConsumerWidget {
+  bool checkReady(data) {
+    print(data.roots);
+    return (data.roots.length == 0);
+  }
+  
+  @override
+  build(BuildContext context, ScopedReader watch) {
+    final data = watch(myDataProvider);
+    final bool flag = checkReady(data);
+    
+    return flag
+        ? SizedBox.shrink()
+        : Container(
+          height: 50,
+          width: 50,
+          child: CustomPaint(
+              child: Container(),
+              painter: MyPainter(data.roots[0], Size(100.0, 100.0))),
+        );
+  }
+}
+
+class MyPainter extends CustomPainter {
+  MyPainter(this.svg, this.size);
+
+  final DrawableRoot svg;
+  final Size size;
+  @override
+  void paint(Canvas canvas, Size size) {
+    svg.scaleCanvasToViewBox(canvas, size);
+    svg.clipCanvasToViewBox(canvas);
+    svg.draw(canvas, Rect.zero);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) {
+    return true;
   }
 }
 
@@ -451,7 +504,7 @@ class Title extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.all(10.0),
       child: Container(
-        height: min(w/10, 90),
+        height: min(w / 10, 90),
         child: Center(
           child: FittedBox(
             fit: BoxFit.fitHeight,
