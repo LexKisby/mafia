@@ -9,12 +9,7 @@ class GamePage extends StatelessWidget {
             child: Center(
                 child: Container(
                     constraints: BoxConstraints.expand(),
-                    decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                      colors: [Colors.white, Colors.black],
-                      begin: Alignment.bottomLeft,
-                      end: Alignment.topRight,
-                    )),
+                    decoration: bwBG,
                     child: GamePageContent()))),
         appBar: GameBarContent());
   }

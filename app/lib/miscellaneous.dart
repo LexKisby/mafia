@@ -2,19 +2,38 @@ part of library;
 
 class Roles {}
 
+final bwBG = BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [Colors.grey.shade300, Colors.black],
+                        begin: Alignment.bottomLeft,
+                        end: Alignment.topRight,
+                      ),
+                      border: Border.all(color: Colors.grey));
+
+final bwSmall = BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [Colors.grey.shade700, Colors.grey.shade300],
+                        begin: Alignment.bottomLeft,
+                        end: Alignment.topRight,
+                      ),
+                      border: Border.all(color: Colors.grey));
+
 class Admin extends ConsumerWidget {
   @override
   build(BuildContext context, ScopedReader watch) {
     final data = watch(myDataProvider);
-    return data.isAdmin ? Container(
-      decoration: BoxDecoration(
-          gradient: LinearGradient(colors: [Colors.red, Colors.amber]),
-          border: Border.all(color: Colors.redAccent)),
+    return data.isAdmin ? Padding(
+      padding: const EdgeInsets.all(4.0),
       child: Container(
-        decoration: BoxDecoration(color: Colors.blueGrey),
-        child: Padding(
-          padding: EdgeInsets.all(3),
-          child: GradientText("ADMIN", gradient: LinearGradient(colors: [Colors.red, Colors.amber])),
+        decoration: BoxDecoration(
+            gradient: LinearGradient(colors: [Colors.red, Colors.amber]),
+            border: Border.all(color: Colors.redAccent)),
+        child: Container(
+          decoration: BoxDecoration(color: Colors.blueGrey),
+          child: Padding(
+            padding: EdgeInsets.all(3),
+            child: GradientText("ADMIN", gradient: LinearGradient(colors: [Colors.red, Colors.amber])),
+          ),
         ),
       ),
     ) : Container(height: 0, width: 0);
@@ -22,9 +41,12 @@ class Admin extends ConsumerWidget {
 }
 
 class Avatar extends ConsumerWidget {
+  Avatar(this.idx);
+  final idx;
+
   bool checkReady(data) {
     print(data.roots);
-    return (data.roots.length == 0);
+    return !(data.roots.length >= idx+1);
   }
 
   @override
@@ -39,7 +61,7 @@ class Avatar extends ConsumerWidget {
             width: 50,
             child: CustomPaint(
                 child: Container(),
-                painter: MyPainter(data.roots[0], Size(100.0, 100.0))),
+                painter: MyPainter(data.roots[idx], Size(100.0, 100.0))),
           );
   }
 }
@@ -89,9 +111,12 @@ class Title extends StatelessWidget {
 }
 
 class PCard extends StatelessWidget {
-  PCard(this.name);
+  PCard(this.name, this.suit, this.value);
+
 
   final String name;
+  final Suit suit;
+  final CardValue value;
 
   @override
   build(BuildContext context) {
@@ -101,7 +126,7 @@ class PCard extends StatelessWidget {
       child: Container(
         height: min(1.6 * w, 300),
         child: PlayingCardView(
-          card: PlayingCard(Suit.clubs, CardValue.ace),
+          card: PlayingCard(suit, value),
         ),
       ),
     );

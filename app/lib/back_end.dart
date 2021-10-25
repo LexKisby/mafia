@@ -12,12 +12,10 @@ class DataChangeNotifier extends ChangeNotifier {
   DateTime date = DateTime.now();
 
   final db = FirebaseFirestore.instance;
-  List<bool> settings = [true, false, false];
+  List<dynamic> settings = [true, false, 1];
   List<Roles> roles = [];
   List<int> votes = [];
-  var users = <String, List>{
-    'me': ['me', 'joker', 1, 'you']
-  };
+  var cloud;
   String rawSvg = multiavatar('cry');
   List<DrawableRoot> roots = [];
 
@@ -29,6 +27,7 @@ class DataChangeNotifier extends ChangeNotifier {
       length, (_) => _chars.codeUnitAt(_rnd.nextInt(_chars.length))));
 
   void findRoom(context) {
+    cleanRoots();
     generateAvatar();
     isAdmin = false;
     ScaffoldMessenger.of(context)
@@ -49,13 +48,14 @@ class DataChangeNotifier extends ChangeNotifier {
           MaterialPageRoute(builder: (context) => SettingsPage()),
         );
       } else {
-        ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text("Can't join room: " + roomCode)));
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("Can't join room: " + roomCode)));
       }
     });
   }
 
   void generateRoom(context) {
+    cleanRoots();
     generateAvatar();
     ScaffoldMessenger.of(context)
         .showSnackBar(SnackBar(content: Text('Processing')));
@@ -88,8 +88,17 @@ class DataChangeNotifier extends ChangeNotifier {
     });
   }
 
-  void updateSettings(int index, bool b) {
-    settings[index] = b;
+  void updateSettings(int index, b, context) {
+    if (index == 2) {
+      settings[2] = settings[2] + b;
+      if (settings[2] < 1) {
+        settings[2] = 1;
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Mafioso cannot be less than 1')));
+      }
+    } else {
+      settings[index] = b;
+    }
     db
         .collection('rooms')
         .doc(roomCode)
@@ -107,8 +116,11 @@ class DataChangeNotifier extends ChangeNotifier {
     );
   }
 
-  void generateAvatar() async {
+  void cleanRoots() {
     roots = [];
+  }
+
+  void generateAvatar() async {
     rawSvg = multiavatar(myUsername);
     var root = await svg.fromSvgString(rawSvg, rawSvg);
     roots.add(root);
