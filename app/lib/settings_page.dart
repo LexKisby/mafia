@@ -33,6 +33,8 @@ class SettingsPage extends ConsumerWidget {
                 Title("ROOM: " + data.roomCode),
                 Gap(),
                 Avatar(),
+                Gap(),
+                Admin(),
                 Spacer()
               ],
             )),

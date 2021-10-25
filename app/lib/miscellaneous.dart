@@ -1,8 +1,25 @@
 part of library;
 
-
 class Roles {}
 
+class Admin extends ConsumerWidget {
+  @override
+  build(BuildContext context, ScopedReader watch) {
+    final data = watch(myDataProvider);
+    return data.isAdmin ? Container(
+      decoration: BoxDecoration(
+          gradient: LinearGradient(colors: [Colors.red, Colors.amber]),
+          border: Border.all(color: Colors.redAccent)),
+      child: Container(
+        decoration: BoxDecoration(color: Colors.blueGrey),
+        child: Padding(
+          padding: EdgeInsets.all(3),
+          child: GradientText("ADMIN", gradient: LinearGradient(colors: [Colors.red, Colors.amber])),
+        ),
+      ),
+    ) : Container(height: 0, width: 0);
+  }
+}
 
 class Avatar extends ConsumerWidget {
   bool checkReady(data) {
@@ -26,7 +43,6 @@ class Avatar extends ConsumerWidget {
           );
   }
 }
-
 
 class MyPainter extends CustomPainter {
   MyPainter(this.svg, this.size);
@@ -98,5 +114,28 @@ class Gap extends StatelessWidget {
     final s = MediaQuery.of(context).size;
     final w = s.width / 30;
     return Container(width: w, height: w);
+  }
+}
+
+class GradientText extends StatelessWidget {
+  const GradientText(
+    this.text, {
+    required this.gradient,
+    this.style,
+  });
+
+  final String text;
+  final TextStyle? style;
+  final Gradient gradient;
+
+  @override
+  Widget build(BuildContext context) {
+    return ShaderMask(
+      blendMode: BlendMode.srcIn,
+      shaderCallback: (bounds) => gradient.createShader(
+        Rect.fromLTWH(0, 0, bounds.width, bounds.height),
+      ),
+      child: Text(text, style: style),
+    );
   }
 }
