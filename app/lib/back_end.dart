@@ -19,6 +19,18 @@ class DataChangeNotifier extends ChangeNotifier {
   String rawSvg = multiavatar('cry');
   List<DrawableRoot> roots = [];
 
+
+  StreamBuilder listener(context) {
+    return StreamBuilder<DocumentSnapshot>(
+      stream: db.collection('rooms').doc(roomCode).snapshots(),
+      builder: (BuildContext context, snapshot) {
+        if (!snapshot.hasData) return Text('...Loading');
+        
+        return Text(snapshot.data!['users'].toString());
+      }
+    );
+  }
+
   final _chars =
       'AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz1234567890';
   Random _rnd = Random();

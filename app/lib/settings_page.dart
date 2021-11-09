@@ -57,32 +57,33 @@ class SettingsPageContent extends ConsumerWidget {
             Checkbox(
                 value: data.settings[0],
                 onChanged: (value) {
-                  data.updateSettings(0, value ?? false);
+                  data.updateSettings(0, value ?? false, context);
                 }),
             Gap(),
             Container(child: Text('Enable option to reveal card voluntarily')),
             Checkbox(
                 value: data.settings[1],
                 onChanged: (value) {
-                  data.updateSettings(1, value ?? false);
+                  data.updateSettings(1, value ?? false, context);
                 }),
             Gap(),
             Spacer()
           ],
         ),
       ),
+      data.listener(context),
       Row(children: [
         Spacer(),
         Container(child: Text('No. of Mafioso')),
         IconButton(
             onPressed: () {
-              data.updateSettings(2, 1);
+              data.updateSettings(2, 1, context);
             },
             icon: Icon(Icons.plus_one)),
         Text(data.settings[2].toString()),
         IconButton(
             onPressed: () {
-              data.updateSettings(2, -1);
+              data.updateSettings(2, -1, context);
             },
             icon: Icon(Icons.exposure_minus_1)),
         Spacer(),
