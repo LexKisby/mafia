@@ -26,9 +26,9 @@ class SettingsPage extends ConsumerWidget {
                 Gap(),
                 Title("ROOM: " + data.roomCode),
                 Gap(),
-                Avatar(0),
+                Avatar(data.myUsername),
                 Gap(),
-                Admin(),
+                Admin(data.myUsername),
                 Spacer()
               ],
             )),
@@ -55,14 +55,14 @@ class SettingsPageContent extends ConsumerWidget {
             Spacer(),
             Container(child: Text('Card revealed on death')),
             Checkbox(
-                value: data.settings[0],
+                value: data.appdata.settings[0],
                 onChanged: (value) {
                   data.updateSettings(0, value ?? false, context);
                 }),
             Gap(),
             Container(child: Text('Enable option to reveal card voluntarily')),
             Checkbox(
-                value: data.settings[1],
+                value: data.appdata.settings[1],
                 onChanged: (value) {
                   data.updateSettings(1, value ?? false, context);
                 }),
@@ -71,7 +71,7 @@ class SettingsPageContent extends ConsumerWidget {
           ],
         ),
       ),
-      data.listener(context),
+      Text(data.appdata.settings.toString()),
       Row(children: [
         Spacer(),
         Container(child: Text('No. of Mafioso')),
@@ -80,7 +80,7 @@ class SettingsPageContent extends ConsumerWidget {
               data.updateSettings(2, 1, context);
             },
             icon: Icon(Icons.plus_one)),
-        Text(data.settings[2].toString()),
+        Text(data.appdata.settings[2].toString()),
         IconButton(
             onPressed: () {
               data.updateSettings(2, -1, context);
@@ -138,11 +138,11 @@ class SettingsPageContent extends ConsumerWidget {
 }
 
 class SettingsPlayers extends ConsumerWidget {
-  final chara = ['Robbo', 'MR BEZAN', 'JEsus'];
 
   @override
   build(BuildContext context, ScopedReader watch) {
     final data = watch(myDataProvider);
+    data.init();
     return Center(
       child: Container(
         height: 250,
@@ -153,19 +153,23 @@ class SettingsPlayers extends ConsumerWidget {
                 crossAxisCount: 2,
                 childAspectRatio: 4.5,
               ),
-              itemCount: 3,
+              itemCount: data.appdata.usernames.length,
               itemBuilder: (BuildContext context, index) {
+                String name = data.appdata.usernames[index];
                 return Container(
                   color: Colors.grey.shade400,
                   alignment: Alignment.center,
                   child: ListTile(
                     hoverColor: Colors.grey.shade400,
                     enabled: true,
-                    leading: Avatar(index),
-                    title: Row(children: [Text(chara[index]), Admin()]),
+                    leading: Avatar(name),
+                    title: Row(children: [Text(name), Admin(name)]),
                     trailing: data.isAdmin
                         ? IconButton(
-                            onPressed: () {}, icon: Icon(Icons.remove_circle))
+                            onPressed: () {
+                              print('deleting: $name');
+                              data.deleteUser(name);
+                              }, icon: Icon(Icons.remove_circle))
                         : Container(height: 0, width: 0),
                   ),
                 );

@@ -12,23 +12,49 @@ class DataChangeNotifier extends ChangeNotifier {
   DateTime date = DateTime.now();
 
   final db = FirebaseFirestore.instance;
-  List<dynamic> settings = [true, false, 1];
-  List<Roles> roles = [];
-  List<int> votes = [];
-  var cloud;
-  String rawSvg = multiavatar('cry');
-  List<DrawableRoot> roots = [];
+  Alldata appdata = Alldata();
+  var sub;
+  bool initFlag = false;
+  
+  void init() {
+    if (initFlag) return;
+    initFlag = true;
+    initSub();
+    print('initialised listener');
+  }
 
+  void reset() {
+    initFlag = false;
+  }
 
-  StreamBuilder listener(context) {
-    return StreamBuilder<DocumentSnapshot>(
-      stream: db.collection('rooms').doc(roomCode).snapshots(),
-      builder: (BuildContext context, snapshot) {
-        if (!snapshot.hasData) return Text('...Loading');
-        
-        return Text(snapshot.data!['users'].toString());
-      }
+  void initSub() {
+    sub = db.collection('rooms').doc(roomCode).snapshots().listen(
+      (snapshot) {
+        print('change');
+        appdata..admin = snapshot['admin']
+                ..settings = snapshot['settings']
+                ..usernames = snapshot['user_names']
+                ..user_content = Map<String, dynamic>.from(snapshot['user_content']);
+          isAdmin = checkAdmin(myUsername);
+          generateAvatars();
+          notifyListeners();
+      },
+      onError: (err) {print(err);},
+      cancelOnError: false,
     );
+  }
+
+  void deleteUser(name) {
+    appdata.usernames.remove(name);
+    db.collection('rooms').doc(roomCode).update({
+      'user_content.${name}': FieldValue.delete(),
+      'user_names': appdata.usernames
+    });
+  }
+
+  bool checkAdmin(name) {
+    if (name==appdata.admin) return true;
+    return false;
   }
 
   final _chars =
@@ -39,21 +65,22 @@ class DataChangeNotifier extends ChangeNotifier {
       length, (_) => _chars.codeUnitAt(_rnd.nextInt(_chars.length))));
 
   void findRoom(context) {
-    cleanRoots();
-    generateAvatar();
     isAdmin = false;
     ScaffoldMessenger.of(context)
         .showSnackBar(SnackBar(content: Text('finding Room: ' + roomCode)));
     db.collection('rooms').doc(roomCode).get().then((docSnapshot) {
       if (docSnapshot.exists) {
         db.collection('rooms').doc(roomCode).update({
-          'users': FieldValue.arrayUnion([
-            {
-              'name': myUsername,
+          'user_names': FieldValue.arrayUnion([myUsername]),
+          'user_content.${myUsername}': {
+              'card': [0, 0],
               'role': 'Villager',
-              'card': [0, 0]
+              'voted_for': [],
+              'votes_avail': 1,
+              'is_dead': false,
+              'showing_card': false,
             }
-          ])
+          
         });
         Navigator.push(
           context,
@@ -67,8 +94,6 @@ class DataChangeNotifier extends ChangeNotifier {
   }
 
   void generateRoom(context) {
-    cleanRoots();
-    generateAvatar();
     ScaffoldMessenger.of(context)
         .showSnackBar(SnackBar(content: Text('Processing')));
     roomCode = getRandomString(5);
@@ -78,15 +103,20 @@ class DataChangeNotifier extends ChangeNotifier {
         //setup
       } else {
         db.collection('rooms').doc(roomCode).set({
-          'users': [
-            {
-              'name': myUsername,
+          'user_names': [myUsername],
+          'user_content': {
+            myUsername: {
+              'card': [0, 0],
               'role': 'Villager',
-              'card': [0, 0]
+              'voted_for': [],
+              'votes_avail': 1,
+              'is_dead': false,
+              'showing_card': false,
             }
-          ],
-          'settings': settings,
-          'votes': [],
+          },
+          'settings': appdata.settings,
+          'admin': myUsername,
+          'votes': {},
           'expiry': Timestamp.fromDate(date.add(Duration(days: 1)))
         });
         isAdmin = true;
@@ -102,21 +132,21 @@ class DataChangeNotifier extends ChangeNotifier {
 
   void updateSettings(int index, b, context) {
     if (index == 2) {
-      settings[2] = settings[2] + b;
-      if (settings[2] < 1) {
-        settings[2] = 1;
+      appdata.settings[2] = appdata.settings[2] + b;
+      if (appdata.settings[2] < 1) {
+        appdata.settings[2] = 1;
         ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Mafioso cannot be less than 1')));
       }
     } else {
-      settings[index] = b;
+      appdata.settings[index] = b;
     }
     db
         .collection('rooms')
         .doc(roomCode)
-        .update({'settings': settings}).then((_) {
+        .update({'settings': appdata.settings}).then((_) {
       print('settings update');
-      print(settings);
+      print(appdata.settings);
     });
     notifyListeners();
   }
@@ -128,14 +158,15 @@ class DataChangeNotifier extends ChangeNotifier {
     );
   }
 
-  void cleanRoots() {
-    roots = [];
+  void generateAvatar(String name) async {
+    String rawSvg = multiavatar(name);
+    var root = await svg.fromSvgString(rawSvg, rawSvg);
+    appdata.user_content[name]!['avatar'] = root;
+    
   }
 
-  void generateAvatar() async {
-    rawSvg = multiavatar(myUsername);
-    var root = await svg.fromSvgString(rawSvg, rawSvg);
-    roots.add(root);
-    notifyListeners();
+  void generateAvatars() async {
+    appdata.usernames.forEach((name) => generateAvatar(name));
+    print('generated avatars');
   }
 }

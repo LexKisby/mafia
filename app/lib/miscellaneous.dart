@@ -1,6 +1,13 @@
 part of library;
 
-class Roles {}
+class Alldata {
+  List<dynamic> usernames = [];
+  Map<String, dynamic> user_content = {};
+  String admin = '';
+  Map<String, int> votes = {};
+  List<dynamic> settings = [true, false, 1];
+
+}
 
 final bwBG = BoxDecoration(
                       gradient: LinearGradient(
@@ -19,10 +26,13 @@ final bwSmall = BoxDecoration(
                       border: Border.all(color: Colors.grey));
 
 class Admin extends ConsumerWidget {
+  Admin(this.name);
+  final String name;
+
   @override
   build(BuildContext context, ScopedReader watch) {
     final data = watch(myDataProvider);
-    return data.isAdmin ? Padding(
+    return data.checkAdmin(name) ? Padding(
       padding: const EdgeInsets.all(4.0),
       child: Container(
         decoration: BoxDecoration(
@@ -41,12 +51,11 @@ class Admin extends ConsumerWidget {
 }
 
 class Avatar extends ConsumerWidget {
-  Avatar(this.idx);
-  final idx;
+  Avatar(this.name);
+  final name;
 
   bool checkReady(data) {
-    print(data.roots);
-    return !(data.roots.length >= idx+1);
+    return (data.appdata.user_content?[name]?['avatar'] == null);
   }
 
   @override
@@ -61,7 +70,7 @@ class Avatar extends ConsumerWidget {
             width: 50,
             child: CustomPaint(
                 child: Container(),
-                painter: MyPainter(data.roots[idx], Size(100.0, 100.0))),
+                painter: MyPainter(data.appdata.user_content[name]!['avatar'], Size(100.0, 100.0))),
           );
   }
 }
