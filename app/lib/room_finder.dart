@@ -65,10 +65,7 @@ class RoomFinderContent extends ConsumerWidget {
                 child: Text("Create Room",
                     style: TextStyle(color: Colors.black, fontSize: 20)),
                 strokeWidth: 4,
-                gradient: LinearGradient(
-                    colors: [Colors.red, Colors.amber],
-                    begin: Alignment.topRight,
-                    end: Alignment.bottomLeft),
+                gradient: raLG,
                 radius: Radius.circular(4),
               ),
               Container(height: 20),
@@ -105,10 +102,7 @@ class RoomFinderContent extends ConsumerWidget {
                 child: Text("Join Room",
                     style: TextStyle(color: Colors.black, fontSize: 20)),
                 strokeWidth: 4,
-                gradient: LinearGradient(
-                    colors: [Colors.red, Colors.amber],
-                    begin: Alignment.topRight,
-                    end: Alignment.bottomLeft),
+                gradient: raLG,
                 radius: Radius.circular(4),
               )
             ],

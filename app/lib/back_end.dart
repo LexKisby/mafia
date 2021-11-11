@@ -11,6 +11,46 @@ class DataChangeNotifier extends ChangeNotifier {
   String roomCode = '';
   DateTime date = DateTime.now();
 
+  //GAME VARIABLES
+
+  void initGame() {
+    //Assign Cards
+    //start stream controller and subscription
+    appdata.game_running = true;
+    db.collection('rooms').doc(roomCode).update({
+      'game_running': true,
+    });
+  }
+
+  void startGame(context) {
+    if (!appdata.game_running) {
+      if (checkStart()) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(
+                'Number of cards in play (${appdata.inPlay.length}) does not match player count: (${appdata.usernames.length})')));
+        return;
+      }
+      initGame();
+    }
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => GamePage()),
+    );
+  }
+
+  bool checkStart() {
+    if (appdata.usernames.length != appdata.inPlay.length) return true;
+    return false;
+  }
+
+  void endGame() {
+    appdata.game_running = false;
+    db.collection('rooms').doc(roomCode).update({
+      'game_running': false,
+    });
+  }
+
+///////////////////////////////////////////////////////////////////////////////
   //CARDS
   List<String> allCards = [
     'VILLAGER',
@@ -25,15 +65,24 @@ class DataChangeNotifier extends ChangeNotifier {
   ];
 
   Map<String, String> cardInfo = {
-    'VILLAGER': 'Standard Card. Participates in votes, and has no special abilities.',
-    'GODFATHER': 'Special Card. Like MAFIOSO, but has the same card value as VILLAGER so cannot be found by DETECTIVE.',
-    'MAFIOSO': 'Standard Card. Awakens at Night in order to kill a player, cannot kill other MAFIOSO/GODFATHER.',
-    'DOCTOR': 'Special Card. Can choose someone to save during the Night. Saved player cannot be harmed during the same Night phase.',
-    'DETECTIVE': "Special Card. Can infer a player's card number once per Night.",
-    'JESTER': 'Special Card. Player objective is to die. Other win conditions take precedence in tie.',
-    'GUNSLINGER': 'Special Card. Player can at any moment kill another player, ONCE per game.',
-    'SHERIFF': 'Can imprison ONE player per Night. Imprisoned players cannot participate in Night phase. Players can only be imprisoned ONCE per game.',
-    'SEER': "Special Card. Can infer the Suit of a player's Card ONCE per Night.",
+    'VILLAGER':
+        'Standard Card. Participates in votes, and has no special abilities.',
+    'GODFATHER':
+        'Special Card. Like MAFIOSO, but has the same card value as VILLAGER so cannot be found by DETECTIVE.',
+    'MAFIOSO':
+        'Standard Card. Awakens at Night in order to kill a player, cannot kill other MAFIOSO/GODFATHER.',
+    'DOCTOR':
+        'Special Card. Can choose someone to save during the Night. Saved player cannot be harmed during the same Night phase.',
+    'DETECTIVE':
+        "Special Card. Can infer a player's card number once per Night.",
+    'JESTER':
+        'Special Card. Player objective is to die. Other win conditions take precedence in tie.',
+    'GUNSLINGER':
+        'Special Card. Player can at any moment kill another player, ONCE per game.',
+    'SHERIFF':
+        'Can imprison ONE player per Night. Imprisoned players cannot participate in Night phase. Players can only be imprisoned ONCE per game.',
+    'SEER':
+        "Special Card. Can infer the Suit of a player's Card ONCE per Night.",
   };
 
   void addCard(name) {
@@ -52,8 +101,9 @@ class DataChangeNotifier extends ChangeNotifier {
       'in_play': appdata.inPlay,
     });
   }
-  
 
+  /////////////////////////////////////////////////////////////////////////
+  ////database + subscriptions
   final db = FirebaseFirestore.instance;
   Alldata appdata = Alldata();
   var sub;
@@ -81,7 +131,9 @@ class DataChangeNotifier extends ChangeNotifier {
           ..settings = snapshot['settings']
           ..usernames = snapshot['user_names']
           ..user_content = Map<String, dynamic>.from(snapshot['user_content'])
-          ..inPlay = snapshot['in_play'];
+          ..inPlay = snapshot['in_play']
+          ..game_running = snapshot['game_running']
+          ..room_destroyed = snapshot['room_destroyed'];
         isAdmin = checkAdmin(myUsername);
         generateAvatars();
         notifyListeners();
@@ -113,6 +165,10 @@ class DataChangeNotifier extends ChangeNotifier {
   String getRandomString(int length) => String.fromCharCodes(Iterable.generate(
       length, (_) => _chars.codeUnitAt(_rnd.nextInt(_chars.length))));
 
+
+
+////////////////////////////////////////////////////////////
+//rooms
   void findRoom(context) {
     isAdmin = false;
     ScaffoldMessenger.of(context)
@@ -151,6 +207,8 @@ class DataChangeNotifier extends ChangeNotifier {
         //setup
       } else {
         db.collection('rooms').doc(roomCode).set({
+          'game_running': false,
+          'room_destroyed': false,
           'user_names': [myUsername],
           'user_content': {
             myUsername: {
@@ -179,6 +237,18 @@ class DataChangeNotifier extends ChangeNotifier {
     });
   }
 
+  void destroyRoom(context) async {
+    await db.collection('rooms').doc(roomCode).update({
+      'room_destroyed': true,
+    });
+    reset();
+    await db.collection('rooms').doc(roomCode).delete();
+    Navigator.of(context).pop();
+    
+  }
+
+  //////////////////////////////////////////////////////
+
   void updateSettings(int index, b, context) {
     if (index == 2) {
       appdata.settings[2] = appdata.settings[2] + b;
@@ -198,13 +268,6 @@ class DataChangeNotifier extends ChangeNotifier {
       print(appdata.settings);
     });
     notifyListeners();
-  }
-
-  void startGame(context) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => GamePage()),
-    );
   }
 
   void generateAvatar(String name) async {

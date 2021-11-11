@@ -18,7 +18,9 @@ class GameBarContent extends ConsumerWidget with PreferredSizeWidget {
   @override
   build(BuildContext context, ScopedReader watch) {
     final data = watch(myDataProvider);
-
+    if (data.appdata.game_running == false || data.appdata.room_destroyed) {
+      Navigator.of(context).pop();
+    }
     return AppBar(title: Title('D A Y'), actions: [
       Card(
           child:
@@ -70,14 +72,16 @@ class GameChips extends ConsumerWidget {
               itemCount: data.appdata.usernames.length,
               itemBuilder: (BuildContext context, index) {
                 String name = data.appdata.usernames[index];
-                Color c = data.appdata.user_content[name]['is_dead'] == false ? Colors.grey : Colors.red;
+                Color c = data.appdata.user_content[name]['is_dead'] == false
+                    ? Colors.grey
+                    : Colors.red;
                 return Container(
                   alignment: Alignment.center,
                   child: ActionChip(
                     backgroundColor: c,
                     onPressed: () {},
                     avatar: Avatar(name),
-                    label:Container(width: 30, child: Flexible(child: Text(name))),
+                    label: Text(name),
                   ),
                 );
               }),
@@ -87,18 +91,23 @@ class GameChips extends ConsumerWidget {
   }
 }
 
-
 class GameCharacters extends ConsumerWidget {
   @override
   build(BuildContext context, ScopedReader watch) {
     final data = watch(myDataProvider);
     return Container(
       child: GridView.builder(
-        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 3, mainAxisSpacing: 20, crossAxisSpacing: 20, childAspectRatio: 3),
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 3,
+            mainAxisSpacing: 20,
+            crossAxisSpacing: 20,
+            childAspectRatio: 3),
         itemCount: 1, //data.appdata.usernames.length,
         itemBuilder: (context, index) {
           String name = data.appdata.usernames[index];
-          Color c = data.appdata.user_content[name]['is_dead'] == false ? Colors.grey : Colors.red;
+          Color c = data.appdata.user_content[name]['is_dead'] == false
+              ? Colors.grey
+              : Colors.red;
           return (Container(
             child: ListTile(
               //onPressed: () {},

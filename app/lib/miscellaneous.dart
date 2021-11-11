@@ -7,8 +7,15 @@ class Alldata {
   Map<String, int> votes = {};
   List<dynamic> settings = [true, false];
   List<dynamic> inPlay = ['VILLAGER'];
+  bool game_running = false;
+  bool room_destroyed = false;
 
 }
+final raLG = LinearGradient(
+                    colors: [Colors.red, Colors.amber],
+                    begin: Alignment.topRight,
+                    end: Alignment.bottomLeft);
+                
 
 final bwBG = BoxDecoration(
                       gradient: LinearGradient(
@@ -191,7 +198,8 @@ class CardDialog extends ConsumerWidget {
   CardDialog(this.name, this.type);
   final int type;
   final String name;
-  String getText(type) {
+  String getText(data, type) {
+    if (data.appdata.game_running) return 'Cannot modify Cards during a game';
     if (type==0) {
       return 'Add Card';
 
@@ -199,6 +207,7 @@ class CardDialog extends ConsumerWidget {
     return 'Remove Card';
   }
   void getAction(data, name, type) {
+    if (data.appdata.game_running) return;
     type == 0 ? data.addCard(name): data.removeCard(name);
   }
 
@@ -219,7 +228,7 @@ class CardDialog extends ConsumerWidget {
       actions: [
         ButtonBar(
         children: [
-          if (data.isAdmin) TextButton(onPressed: () {getAction(data, name, type);Navigator.pop(context);}, child: Text(getText(type))),
+          if (data.isAdmin) TextButton(onPressed: () {getAction(data, name, type);Navigator.pop(context);}, child: Text(getText(data, type))),
           TextButton(onPressed: () {Navigator.pop(context);}, child: Text('Return')),
         ]
       )]

@@ -2,11 +2,13 @@ part of library;
 
 class SettingsPage extends ConsumerWidget {
   Widget? getFab(data, context) {
-    return data.isAdmin ? FloatingActionButton(
-          onPressed: () {
-            data.startGame(context);
-          },
-          child: Icon(Icons.play_arrow)) : null;
+    return data.isAdmin
+        ? FloatingActionButton(
+            onPressed: () {
+              data.startGame(context);
+            },
+            child: Icon(Icons.play_arrow))
+        : null;
   }
 
   Widget build(BuildContext context, ScopedReader watch) {
@@ -54,6 +56,13 @@ class SettingsPageContent extends ConsumerWidget {
     final ScrollController _scrollControllerA = ScrollController();
     final ScrollController _scrollControllerB = ScrollController();
 
+    if (data.appdata.room_destroyed) {
+      data.reset();
+      data.appdata.room_destroyed = false;
+      Navigator.of(context).pop();
+    } else {
+      data.init();
+    }
     return ListView(padding: EdgeInsets.all(20), children: [
       Title("S E T T I N G S"),
       Padding(
@@ -79,6 +88,29 @@ class SettingsPageContent extends ConsumerWidget {
           ],
         ),
       ),
+      Row(children: [
+        if (data.isAdmin && data.appdata.game_running)
+          Center(
+              child: OutlineGradientButton(
+                  gradient: raLG,
+                  radius: Radius.circular(4),
+                  strokeWidth: 4,
+                  onTap: () {
+                    data.endGame();
+                  },
+                  child: Text('END GAME'))),
+        if (data.isAdmin)
+          Center(
+              child: OutlineGradientButton(
+                radius: Radius.circular(4),
+                onTap: () {
+                  data.destroyRoom(context);
+                },
+            child: Text('Destroy Room'),
+            gradient: raLG,
+            strokeWidth: 4,
+          ))
+      ]),
       //Text(data.appdata.settings.toString()),
 
       Container(height: 40),
@@ -132,7 +164,6 @@ class SettingsPlayers extends ConsumerWidget {
   @override
   build(BuildContext context, ScopedReader watch) {
     final data = watch(myDataProvider);
-    data.init();
     return Center(
       child: Container(
         height: 250,
