@@ -21,6 +21,8 @@ class SettingsPage extends ConsumerWidget {
                 IconButton(
                     icon: Icon(Icons.arrow_back_ios),
                     onPressed: () {
+                      data.reset();
+
                       Navigator.pop(context);
                     }),
                 Gap(),
@@ -45,6 +47,8 @@ class SettingsPage extends ConsumerWidget {
 class SettingsPageContent extends ConsumerWidget {
   build(BuildContext context, ScopedReader watch) {
     final data = watch(myDataProvider);
+    final ScrollController _scrollControllerA = ScrollController();
+    final ScrollController _scrollControllerB = ScrollController();
 
     return ListView(padding: EdgeInsets.all(20), children: [
       Title("S E T T I N G S"),
@@ -71,64 +75,47 @@ class SettingsPageContent extends ConsumerWidget {
           ],
         ),
       ),
-      Text(data.appdata.settings.toString()),
-      Row(children: [
-        Spacer(),
-        Container(child: Text('No. of Mafioso')),
-        IconButton(
-            onPressed: () {
-              data.updateSettings(2, 1, context);
-            },
-            icon: Icon(Icons.plus_one)),
-        Text(data.appdata.settings[2].toString()),
-        IconButton(
-            onPressed: () {
-              data.updateSettings(2, -1, context);
-            },
-            icon: Icon(Icons.exposure_minus_1)),
-        Spacer(),
-      ]),
+      //Text(data.appdata.settings.toString()),
+
       Container(height: 40),
       Title("C A R D S   I N   P L A Y"),
       Container(
         height: 150,
-        child: ListView(
-          scrollDirection: Axis.horizontal,
-          children: [
-            Spacer(),
-            PCard('VILLAGER', Suit.clubs, CardValue.two),
-            Gap(),
-            PCard('GODFATHER', Suit.spades, CardValue.two),
-            Gap(),
-            PCard('VILLAGER', Suit.clubs, CardValue.three),
-            Gap(),
-            PCard('VILLAGER', Suit.clubs, CardValue.four),
-            Spacer()
-          ],
+        child: Scrollbar(
+          isAlwaysShown: true,
+          controller: _scrollControllerA,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            controller: _scrollControllerA,
+            itemCount: data.appdata.inPlay.length + 1,
+            itemBuilder: (context, index) {
+              if (index == 0) return Gap();
+              return CardSize(data.appdata.inPlay[index - 1], 0, 1);
+            },
+            separatorBuilder: (context, index) {
+              return Gap();
+            },
+          ),
         ),
       ),
       Title("E X T R A   C A R D S"),
       Container(
         height: 150,
-        child: ListView(
-          scrollDirection: Axis.horizontal,
-          children: [
-            Spacer(),
-            PCard('JOKER', Suit.hearts, CardValue.ace),
-            Gap(),
-            PCard('DOCTOR', Suit.hearts, CardValue.king),
-            Gap(),
-            PCard('DETECTIVE', Suit.spades, CardValue.ace),
-            Gap(),
-            PCard('GUNSLINGER', Suit.diamonds, CardValue.ace),
-            Gap(),
-            PCard('MAFIOSO', Suit.hearts, CardValue.jack),
-            Gap(),
-            PCard('SHERIFF', Suit.spades, CardValue.jack),
-            Gap(),
-            PCard('SEER', Suit.diamonds, CardValue.jack),
-            Spacer(),
-          ],
+        child: Scrollbar(
+          isAlwaysShown: true,
+          controller: _scrollControllerB,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            controller: _scrollControllerB,
+            itemCount: data.allCards.length + 1,
+            itemBuilder: (context, index) {
+              if (index == 0) return Gap();
+              return PCard(data.allCards[index - 1], 0);
+            },
+            separatorBuilder: (context, index) {
+              return Gap();
+            },
+          ),
         ),
       ),
       Title("P L A Y E R S"),
@@ -138,7 +125,6 @@ class SettingsPageContent extends ConsumerWidget {
 }
 
 class SettingsPlayers extends ConsumerWidget {
-
   @override
   build(BuildContext context, ScopedReader watch) {
     final data = watch(myDataProvider);
@@ -169,7 +155,10 @@ class SettingsPlayers extends ConsumerWidget {
                             onPressed: () {
                               print('deleting: $name');
                               data.deleteUser(name);
-                              }, icon: Icon(Icons.remove_circle))
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text('Removed ${name}')));
+                            },
+                            icon: Icon(Icons.remove_circle))
                         : Container(height: 0, width: 0),
                   ),
                 );

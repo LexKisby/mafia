@@ -5,7 +5,8 @@ class Alldata {
   Map<String, dynamic> user_content = {};
   String admin = '';
   Map<String, int> votes = {};
-  List<dynamic> settings = [true, false, 1];
+  List<dynamic> settings = [true, false];
+  List<dynamic> inPlay = ['VILLAGER'];
 
 }
 
@@ -120,24 +121,108 @@ class Title extends StatelessWidget {
 }
 
 class PCard extends StatelessWidget {
-  PCard(this.name, this.suit, this.value);
+  PCard(this.name, this.type);
 
+  List<dynamic> getArgs(name) {
+    switch(name) {
+      case 'VILLAGER': return [Suit.clubs, CardValue.two];
+      case 'GODFATHER': return [Suit.spades, CardValue.two];
+      case 'JESTER': return [Suit.hearts, CardValue.ace];
+      case 'DOCTOR': return [Suit.hearts, CardValue.king];
+      case 'DETECTIVE': return [Suit.spades, CardValue.ace];
+      case 'GUNSLINGER': return [Suit.diamonds, CardValue.ace];
+      case 'MAFIOSO': return [Suit.hearts, CardValue.jack];
+      case 'SHERIFF': return [Suit.spades, CardValue.jack];
+      case 'SEER': return [Suit.diamonds, CardValue.jack];
+      
+    }
+    return [Suit.clubs, CardValue.ace];
+  }
 
+  CardValue getValue(int a, int b) {
+    Random _rnd = Random();
+    List<CardValue> values = [CardValue.ace, CardValue.two, CardValue.three, CardValue.four, CardValue.five, CardValue.six, CardValue.seven, CardValue.eight, CardValue.nine, CardValue.ten, CardValue.jack, CardValue.queen, CardValue.king];
+    return values[a + _rnd.nextInt(b-a)];
+  }
   final String name;
-  final Suit suit;
-  final CardValue value;
+  final int type;
+  
 
   @override
   build(BuildContext context) {
-    final s = MediaQuery.of(context).size;
-    final w = s.width / 8;
-    return Card(
-      child: Container(
-        height: min(1.6 * w, 300),
-        child: PlayingCardView(
-          card: PlayingCard(suit, value),
+    final sv = getArgs(name);
+    return GestureDetector(
+      onTap: () {
+        if (type==-1) {
+          return;
+        }
+        Navigator.push(context, DialogRoute(context: context, builder: (context) => CardDialog(name, type)));
+      },
+      child: Card(
+        child: Container(
+          //height: min(1.6 * w, 300),
+          child: PlayingCardView(
+            card: PlayingCard(sv[0], sv[1]),
+          ),
         ),
       ),
+    );
+  }
+}
+
+class CardSize extends StatelessWidget {
+  CardSize(this.name, this.height, this.type);
+  final String name;
+  final double height;
+  final int type;
+
+  @override 
+  build(BuildContext context) {
+    final s = MediaQuery.of(context).size;
+    final w = s.width / 8;
+    final h;
+    if (height==0) {h = min(1.6* w, 300);} else {h = height;}
+    return Container(height: h,
+    child: PCard(name, type));
+  }
+}
+
+class CardDialog extends ConsumerWidget {
+  CardDialog(this.name, this.type);
+  final int type;
+  final String name;
+  String getText(type) {
+    if (type==0) {
+      return 'Add Card';
+
+    }
+    return 'Remove Card';
+  }
+  void getAction(data, name, type) {
+    type == 0 ? data.addCard(name): data.removeCard(name);
+  }
+
+  @override 
+  build(BuildContext context, ScopedReader watch) {
+    final data = watch(myDataProvider);
+    return AlertDialog(
+      backgroundColor: Colors.blueGrey,
+      title: Title(name),
+      content: Row(
+        children: [
+          CardSize(name, 350, -1),
+          Gap(),
+          Gap(), 
+          Flexible(child: Text(data.cardInfo[name]??'error. name not found')),
+        ]
+      ),
+      actions: [
+        ButtonBar(
+        children: [
+          if (data.isAdmin) TextButton(onPressed: () {getAction(data, name, type);Navigator.pop(context);}, child: Text(getText(type))),
+          TextButton(onPressed: () {Navigator.pop(context);}, child: Text('Return')),
+        ]
+      )]
     );
   }
 }

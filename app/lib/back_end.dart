@@ -11,11 +11,54 @@ class DataChangeNotifier extends ChangeNotifier {
   String roomCode = '';
   DateTime date = DateTime.now();
 
+  //CARDS
+  List<String> allCards = [
+    'VILLAGER',
+    'GODFATHER',
+    'MAFIOSO',
+    'DOCTOR',
+    'DETECTIVE',
+    'JESTER',
+    'GUNSLINGER',
+    'SHERIFF',
+    'SEER'
+  ];
+
+  Map<String, String> cardInfo = {
+    'VILLAGER': 'Standard Card. Participates in votes, and has no special abilities.',
+    'GODFATHER': 'Special Card. Like MAFIOSO, but has the same card value as VILLAGER so cannot be found by DETECTIVE.',
+    'MAFIOSO': 'Standard Card. Awakens at Night in order to kill a player, cannot kill other MAFIOSO/GODFATHER.',
+    'DOCTOR': 'Special Card. Can choose someone to save during the Night. Saved player cannot be harmed during the same Night phase.',
+    'DETECTIVE': "Special Card. Can infer a player's card number once per Night.",
+    'JESTER': 'Special Card. Player objective is to die. Other win conditions take precedence in tie.',
+    'GUNSLINGER': 'Special Card. Player can at any moment kill another player, ONCE per game.',
+    'SHERIFF': 'Can imprison ONE player per Night. Imprisoned players cannot participate in Night phase. Players can only be imprisoned ONCE per game.',
+    'SEER': "Special Card. Can infer the Suit of a player's Card ONCE per Night.",
+  };
+
+  void addCard(name) {
+    appdata.inPlay.add(name);
+    updateCards();
+    notifyListeners();
+  }
+
+  void removeCard(name) {
+    appdata.inPlay.remove(name);
+    updateCards();
+  }
+
+  void updateCards() {
+    db.collection('rooms').doc(roomCode).update({
+      'in_play': appdata.inPlay,
+    });
+  }
+  
+
   final db = FirebaseFirestore.instance;
   Alldata appdata = Alldata();
   var sub;
   bool initFlag = false;
-  
+
   void init() {
     if (initFlag) return;
     initFlag = true;
@@ -24,22 +67,28 @@ class DataChangeNotifier extends ChangeNotifier {
   }
 
   void reset() {
+    print('resetting');
     initFlag = false;
+    sub.cancel();
   }
 
   void initSub() {
     sub = db.collection('rooms').doc(roomCode).snapshots().listen(
       (snapshot) {
         print('change');
-        appdata..admin = snapshot['admin']
-                ..settings = snapshot['settings']
-                ..usernames = snapshot['user_names']
-                ..user_content = Map<String, dynamic>.from(snapshot['user_content']);
-          isAdmin = checkAdmin(myUsername);
-          generateAvatars();
-          notifyListeners();
+        appdata
+          ..admin = snapshot['admin']
+          ..settings = snapshot['settings']
+          ..usernames = snapshot['user_names']
+          ..user_content = Map<String, dynamic>.from(snapshot['user_content'])
+          ..inPlay = snapshot['in_play'];
+        isAdmin = checkAdmin(myUsername);
+        generateAvatars();
+        notifyListeners();
       },
-      onError: (err) {print(err);},
+      onError: (err) {
+        print(err);
+      },
       cancelOnError: false,
     );
   }
@@ -53,7 +102,7 @@ class DataChangeNotifier extends ChangeNotifier {
   }
 
   bool checkAdmin(name) {
-    if (name==appdata.admin) return true;
+    if (name == appdata.admin) return true;
     return false;
   }
 
@@ -73,14 +122,13 @@ class DataChangeNotifier extends ChangeNotifier {
         db.collection('rooms').doc(roomCode).update({
           'user_names': FieldValue.arrayUnion([myUsername]),
           'user_content.${myUsername}': {
-              'card': [0, 0],
-              'role': 'Villager',
-              'voted_for': [],
-              'votes_avail': 1,
-              'is_dead': false,
-              'showing_card': false,
-            }
-          
+            'card': [0, 0],
+            'role': 'Villager',
+            'voted_for': [],
+            'votes_avail': 1,
+            'is_dead': false,
+            'showing_card': false,
+          }
         });
         Navigator.push(
           context,
@@ -115,6 +163,7 @@ class DataChangeNotifier extends ChangeNotifier {
             }
           },
           'settings': appdata.settings,
+          'in_play': ['VILLAGER'],
           'admin': myUsername,
           'votes': {},
           'expiry': Timestamp.fromDate(date.add(Duration(days: 1)))
@@ -162,7 +211,6 @@ class DataChangeNotifier extends ChangeNotifier {
     String rawSvg = multiavatar(name);
     var root = await svg.fromSvgString(rawSvg, rawSvg);
     appdata.user_content[name]!['avatar'] = root;
-    
   }
 
   void generateAvatars() async {
