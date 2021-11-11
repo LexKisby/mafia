@@ -1,6 +1,14 @@
 part of library;
 
 class SettingsPage extends ConsumerWidget {
+  Widget? getFab(data, context) {
+    return data.isAdmin ? FloatingActionButton(
+          onPressed: () {
+            data.startGame(context);
+          },
+          child: Icon(Icons.play_arrow)) : null;
+  }
+
   Widget build(BuildContext context, ScopedReader watch) {
     final data = watch(myDataProvider);
     return Scaffold(
@@ -35,11 +43,7 @@ class SettingsPage extends ConsumerWidget {
               ],
             )),
       ),
-      floatingActionButton: FloatingActionButton(
-          onPressed: () {
-            data.startGame(context);
-          },
-          child: Icon(Icons.play_arrow)),
+      floatingActionButton: getFab(data, context),
     );
   }
 }
